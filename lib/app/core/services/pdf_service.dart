@@ -175,14 +175,15 @@ class PdfService extends GetxService implements BasePdfService {
 
   /// Get page count of a PDF document
   Future<int> getPageCount(String pdfPath) async {
+    PdfDocument? pdfDocument;
     try {
-      final pdfDocument = await PdfDocument.openFile(pdfPath);
-      final count = pdfDocument.pages.length;
-      pdfDocument.dispose();
-      return count;
+      pdfDocument = await PdfDocument.openFile(pdfPath);
+      return pdfDocument.pages.length;
     } catch (e) {
       debugPrint('Error getting page count: $e');
       return 0;
+    } finally {
+      pdfDocument?.dispose();
     }
   }
 }

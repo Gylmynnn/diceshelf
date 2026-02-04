@@ -12,30 +12,38 @@ class DrawingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: GestureDetector(
-        onPanStart: (details) {
-          controller.startStroke(details.localPosition);
-        },
-        onPanUpdate: (details) {
-          controller.updateStroke(details.localPosition);
-        },
-        onPanEnd: (details) {
-          controller.endStroke(controller.currentPage.value - 1);
-        },
-        child: Obx(
-          () => CustomPaint(
-            painter: DrawingPainter(
-              currentStroke: controller.currentStroke.toList(),
-              color: controller.annotationMode.value == AnnotationMode.eraser
-                  ? EverblushColors.textMuted
-                  : controller.selectedDrawingColor.value,
-              strokeWidth: controller.strokeWidth.value,
-              isEraser:
-                  controller.annotationMode.value == AnnotationMode.eraser,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+          return GestureDetector(
+            onPanStart: (details) {
+              controller.startStroke(details.localPosition, viewSize);
+            },
+            onPanUpdate: (details) {
+              controller.updateStroke(details.localPosition, viewSize);
+            },
+            onPanEnd: (details) {
+              controller.endStroke(controller.currentPage.value - 1, viewSize);
+            },
+            child: Obx(
+              () => CustomPaint(
+                painter: DrawingPainter(
+                  currentStroke: controller.currentStroke.toList(),
+                  viewSize: viewSize,
+                  color:
+                      controller.annotationMode.value == AnnotationMode.eraser
+                      ? EverblushColors.textMuted
+                      : controller.selectedDrawingColor.value,
+                  strokeWidth: controller.strokeWidth.value,
+                  isEraser:
+                      controller.annotationMode.value == AnnotationMode.eraser,
+                ),
+                size: Size.infinite,
+              ),
             ),
-            size: Size.infinite,
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -43,12 +51,14 @@ class DrawingOverlay extends StatelessWidget {
 
 class DrawingPainter extends CustomPainter {
   final List<Offset> currentStroke;
+  final Size viewSize;
   final Color color;
   final double strokeWidth;
   final bool isEraser;
 
   DrawingPainter({
     required this.currentStroke,
+    required this.viewSize,
     required this.color,
     required this.strokeWidth,
     required this.isEraser,
@@ -65,10 +75,15 @@ class DrawingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    if (currentStroke.length == 1) {
+    // Convert normalized coordinates back to screen coordinates
+    final screenPoints = currentStroke
+        .map((p) => Offset(p.dx * viewSize.width, p.dy * viewSize.height))
+        .toList();
+
+    if (screenPoints.length == 1) {
       // Draw a single point as a circle
       canvas.drawCircle(
-        currentStroke.first,
+        screenPoints.first,
         strokeWidth / 2,
         paint..style = PaintingStyle.fill,
       );
@@ -77,11 +92,11 @@ class DrawingPainter extends CustomPainter {
 
     // Draw smooth path through all points
     final path = Path();
-    path.moveTo(currentStroke.first.dx, currentStroke.first.dy);
+    path.moveTo(screenPoints.first.dx, screenPoints.first.dy);
 
-    for (var i = 1; i < currentStroke.length - 1; i++) {
-      final p0 = currentStroke[i];
-      final p1 = currentStroke[i + 1];
+    for (var i = 1; i < screenPoints.length - 1; i++) {
+      final p0 = screenPoints[i];
+      final p1 = screenPoints[i + 1];
 
       // Use quadratic bezier for smoother curves
       final midPoint = Offset((p0.dx + p1.dx) / 2, (p0.dy + p1.dy) / 2);
@@ -89,8 +104,8 @@ class DrawingPainter extends CustomPainter {
     }
 
     // Draw the last point
-    if (currentStroke.length > 1) {
-      path.lineTo(currentStroke.last.dx, currentStroke.last.dy);
+    if (screenPoints.length > 1) {
+      path.lineTo(screenPoints.last.dx, screenPoints.last.dy);
     }
 
     canvas.drawPath(path, paint);

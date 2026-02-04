@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../core/constants/collection_icons.dart';
 import '../../../data/models/collection.dart';
 
 /// Card widget for displaying a collection
@@ -47,7 +48,7 @@ class CollectionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
-                  _getIconData(collection.iconName),
+                  CollectionIcons.getIcon(collection.iconName),
                   color: collectionColor,
                   size: 28,
                 ),
@@ -141,42 +142,5 @@ class CollectionCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'folder':
-        return Iconsax.folder_2;
-      case 'book':
-        return Iconsax.book;
-      case 'document':
-        return Iconsax.document;
-      case 'archive':
-        return Iconsax.archive;
-      case 'briefcase':
-        return Iconsax.briefcase;
-      case 'category':
-        return Iconsax.category;
-      case 'clipboard':
-        return Iconsax.clipboard;
-      case 'note':
-        return Iconsax.note;
-      case 'bookmark':
-        return Iconsax.bookmark;
-      case 'star':
-        return Iconsax.star;
-      case 'heart':
-        return Iconsax.heart;
-      case 'flag':
-        return Iconsax.flag;
-      case 'tag':
-        return Iconsax.tag;
-      case 'layer':
-        return Iconsax.layer;
-      case 'box':
-        return Iconsax.box;
-      default:
-        return Iconsax.folder_2;
-    }
   }
 }

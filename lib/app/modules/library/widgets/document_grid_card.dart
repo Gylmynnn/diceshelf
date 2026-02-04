@@ -352,30 +352,20 @@ class DocumentGridCard extends StatelessWidget {
       return Container(
         height: height,
         decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest),
-        child: FutureBuilder<bool>(
-          future: file.exists(),
-          builder: (context, snapshot) {
-            // Show shimmer while loading
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildShimmerPlaceholder(colorScheme, height);
+        child: Image.file(
+          file,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: height,
+          cacheWidth: 400, // Optimized for grid view
+          cacheHeight: 560,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded || frame != null) {
+              return child;
             }
-            if (snapshot.data == true) {
-              return Image.file(
-                file,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: height,
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded || frame != null) {
-                    return child;
-                  }
-                  return _buildShimmerPlaceholder(colorScheme, height);
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildPlaceholder(colorScheme, height);
-                },
-              );
-            }
+            return _buildShimmerPlaceholder(colorScheme, height);
+          },
+          errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholder(colorScheme, height);
           },
         ),

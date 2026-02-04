@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/colors.dart';
 import '../../../core/services/localization_service.dart';
 import '../controllers/pdf_viewer_controller.dart';
 
@@ -13,21 +12,22 @@ class PageIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = Get.find<LocalizationService>();
+    final theme = Theme.of(context);
 
     return Obx(
       () => GestureDetector(
-        onTap: () => _showGoToPageDialog(context, l10n),
+        onTap: () => _showGoToPageDialog(context, l10n, theme),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: EverblushColors.surface.withValues(alpha: 0.9),
+            color: theme.colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             '${l10n.tr('page')} ${controller.currentPage.value} ${l10n.tr('of')} ${controller.totalPages.value}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: EverblushColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -36,25 +36,31 @@ class PageIndicator extends StatelessWidget {
     );
   }
 
-  void _showGoToPageDialog(BuildContext context, LocalizationService l10n) {
+  void _showGoToPageDialog(
+    BuildContext context,
+    LocalizationService l10n,
+    ThemeData theme,
+  ) {
     final textController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: EverblushColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         title: Text(
           l10n.tr('goToPage'),
-          style: const TextStyle(color: EverblushColors.textPrimary),
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         content: TextField(
           controller: textController,
           keyboardType: TextInputType.number,
           autofocus: true,
-          style: const TextStyle(color: EverblushColors.textPrimary),
+          style: TextStyle(color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: l10n.tr('enterPageNumber'),
-            hintStyle: const TextStyle(color: EverblushColors.textMuted),
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
         ),
         actions: [
@@ -62,7 +68,9 @@ class PageIndicator extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: Text(
               l10n.tr('cancel'),
-              style: const TextStyle(color: EverblushColors.textSecondary),
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
           ),
           TextButton(
@@ -83,11 +91,11 @@ class PageIndicator extends StatelessWidget {
             },
             child: Text(
               l10n.tr('done'),
-              style: const TextStyle(color: EverblushColors.primary),
+              style: TextStyle(color: theme.colorScheme.primary),
             ),
           ),
         ],
       ),
-    );
+    ).then((_) => textController.dispose());
   }
 }

@@ -77,5 +77,12 @@
   "onboardingTitle2": "Annotate & Highlight",
   "onboardingDesc2": "Add highlights, notes, and drawings to your documents. Bookmark important pages",
   "onboardingTitle3": "Organize Your Library",
-  "onboardingDesc3": "Create collections to organize your PDFs. Mark favorites for quick access"
+  "onboardingDesc3": "Create collections to organize your PDFs. Mark favorites for quick access",
+  "addHighlight": "Add Highlight",
+  "add": "Add",
+  "noResultsFound": "No results found",
+  "lockZoom": "Lock Zoom",
+  "clearDrawings": "Clear Drawings",
+  "clearDrawingsConfirm": "Are you sure you want to clear all drawings on this page?",
+  "strokeWidth": "Stroke Width"
 }

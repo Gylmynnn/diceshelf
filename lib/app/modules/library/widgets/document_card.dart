@@ -246,20 +246,14 @@ class DocumentCard extends StatelessWidget {
       final file = File(document.thumbnailPath!);
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: FutureBuilder<bool>(
-          future: file.exists(),
-          builder: (context, snapshot) {
-            if (snapshot.data == true) {
-              return Image.file(
-                file,
-                width: width,
-                height: height,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildPlaceholder(colorScheme, width, height);
-                },
-              );
-            }
+        child: Image.file(
+          file,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          cacheWidth: 112, // 2x for high DPI
+          cacheHeight: 144,
+          errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholder(colorScheme, width, height);
           },
         ),

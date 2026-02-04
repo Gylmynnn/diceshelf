@@ -3,6 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../core/constants/collection_icons.dart';
 import '../../../core/constants/strings.dart';
 import '../../../core/services/localization_service.dart';
 import '../../../data/models/collection.dart';
@@ -20,11 +21,6 @@ class LibraryView extends GetView<LibraryController> {
   Widget build(BuildContext context) {
     final l10n = Get.find<LocalizationService>();
     final theme = Theme.of(context);
-
-    // Initialize collections controller
-    if (!Get.isRegistered<CollectionsController>()) {
-      Get.put(CollectionsController());
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -200,88 +196,84 @@ class LibraryView extends GetView<LibraryController> {
     final collectionsController = Get.find<CollectionsController>();
     final theme = Theme.of(context);
 
-    return Obx(() {
-      if (collectionsController.collections.isEmpty) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(
-                      alpha: 0.3,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
+    // No need for Obx here - parent widget already has Obx wrapping _buildContent
+    if (collectionsController.collections.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.3,
                   ),
-                  child: Icon(
-                    Iconsax.folder_2,
-                    size: 40,
-                    color: theme.colorScheme.primary,
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  l10n.tr('noCollections'),
-                  style: theme.textTheme.titleLarge,
+                child: Icon(
+                  Iconsax.folder_2,
+                  size: 40,
+                  color: theme.colorScheme.primary,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.tr('noCollectionsDescription'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => Get.toNamed('/collections'),
-                  icon: const Icon(Iconsax.add),
-                  label: Text(l10n.tr('createCollection')),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Quick access to full collections page
-          ListTile(
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Iconsax.setting_4, color: theme.colorScheme.primary),
-            ),
-            title: Text(l10n.tr('collections')),
-            subtitle: Text(
-              '${collectionsController.collections.length} ${l10n.tr('collections').toLowerCase()}',
-            ),
-            trailing: const Icon(Iconsax.arrow_right_3),
-            onTap: () => Get.toNamed('/collections'),
+              const SizedBox(height: 24),
+              Text(l10n.tr('noCollections'), style: theme.textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                l10n.tr('noCollectionsDescription'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () => Get.toNamed('/collections'),
+                icon: const Icon(Iconsax.add),
+                label: Text(l10n.tr('createCollection')),
+              ),
+            ],
           ),
-          const Divider(height: 32),
-          // Collection grid
-          ...collectionsController.collections.map((collection) {
-            return _buildCollectionTile(
-              collection,
-              collectionsController,
-              l10n,
-              theme,
-            );
-          }),
-        ],
+        ),
       );
-    });
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Quick access to full collections page
+        ListTile(
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Iconsax.setting_4, color: theme.colorScheme.primary),
+          ),
+          title: Text(l10n.tr('collections')),
+          subtitle: Text(
+            '${collectionsController.collections.length} ${l10n.tr('collections').toLowerCase()}',
+          ),
+          trailing: const Icon(Iconsax.arrow_right_3),
+          onTap: () => Get.toNamed('/collections'),
+        ),
+        const Divider(height: 32),
+        // Collection grid
+        ...collectionsController.collections.map((collection) {
+          return _buildCollectionTile(
+            collection,
+            collectionsController,
+            l10n,
+            theme,
+          );
+        }),
+      ],
+    );
   }
 
   Widget _buildCollectionTile(
@@ -307,7 +299,7 @@ class LibraryView extends GetView<LibraryController> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            _getCollectionIcon(collection.iconName),
+            CollectionIcons.getIcon(collection.iconName),
             color: collectionColor,
           ),
         ),
@@ -323,43 +315,6 @@ class LibraryView extends GetView<LibraryController> {
             Get.toNamed('/collection/${collection.id}', arguments: collection),
       ),
     );
-  }
-
-  IconData _getCollectionIcon(String iconName) {
-    switch (iconName) {
-      case 'folder':
-        return Iconsax.folder_2;
-      case 'book':
-        return Iconsax.book;
-      case 'document':
-        return Iconsax.document;
-      case 'archive':
-        return Iconsax.archive;
-      case 'briefcase':
-        return Iconsax.briefcase;
-      case 'category':
-        return Iconsax.category;
-      case 'clipboard':
-        return Iconsax.clipboard;
-      case 'note':
-        return Iconsax.note;
-      case 'bookmark':
-        return Iconsax.bookmark;
-      case 'star':
-        return Iconsax.star;
-      case 'heart':
-        return Iconsax.heart;
-      case 'flag':
-        return Iconsax.flag;
-      case 'tag':
-        return Iconsax.tag;
-      case 'layer':
-        return Iconsax.layer;
-      case 'box':
-        return Iconsax.box;
-      default:
-        return Iconsax.folder_2;
-    }
   }
 
   /// Get collection name for a document

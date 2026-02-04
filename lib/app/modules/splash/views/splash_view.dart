@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
 
 import '../../../core/constants/colors.dart';
 import '../controllers/splash_controller.dart';
@@ -31,11 +30,6 @@ class SplashView extends GetView<SplashController> {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [EverblushColors.cyan, EverblushColors.purple],
-                  ),
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
@@ -45,7 +39,15 @@ class SplashView extends GetView<SplashController> {
                     ),
                   ],
                 ),
-                child: const Icon(Iconsax.book, size: 56, color: Colors.white),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Image.asset(
+                    'assets/icons/app_icon.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 32),

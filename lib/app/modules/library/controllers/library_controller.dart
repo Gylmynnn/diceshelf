@@ -5,12 +5,14 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/strings.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/thumbnail_queue_service.dart';
 import '../../../data/models/pdf_document.dart';
 
 /// Controller for the Library screen
 class LibraryController extends GetxController {
   final _storageService = Get.find<StorageService>();
   final _pdfService = Get.find<PdfService>();
+  final _thumbnailQueue = Get.find<ThumbnailQueueService>();
 
   final RxList<PdfDocument> documents = <PdfDocument>[].obs;
   final RxList<PdfDocument> recentDocuments = <PdfDocument>[].obs;
@@ -54,13 +56,20 @@ class LibraryController extends GetxController {
 
     // Sort by last opened
     allDocs.sort((a, b) => b.lastOpenedAt.compareTo(a.lastOpenedAt));
+
+    // Single pass to categorize documents
+    final recent = <PdfDocument>[];
+    final favorites = <PdfDocument>[];
+
+    for (var i = 0; i < allDocs.length; i++) {
+      final doc = allDocs[i];
+      if (i < 10) recent.add(doc);
+      if (doc.isFavorite) favorites.add(doc);
+    }
+
     documents.assignAll(allDocs);
-
-    // Recent documents (last 10)
-    recentDocuments.assignAll(allDocs.take(10));
-
-    // Favorites
-    favoriteDocuments.assignAll(allDocs.where((d) => d.isFavorite));
+    recentDocuments.assignAll(recent);
+    favoriteDocuments.assignAll(favorites);
   }
 
   /// Open file picker and add PDF to library
@@ -96,7 +105,9 @@ class LibraryController extends GetxController {
         );
 
         await _storageService.documentsBox.put(doc.id, doc);
-        loadDocuments();
+
+        // Targeted update instead of full reload
+        _addDocumentToLists(doc);
 
         // Open the PDF
         Get.toNamed('/pdf-viewer', arguments: doc);
@@ -106,45 +117,109 @@ class LibraryController extends GetxController {
     }
   }
 
+  /// Add document to lists without full reload
+  void _addDocumentToLists(PdfDocument doc) {
+    documents.insert(0, doc);
+    recentDocuments.insert(0, doc);
+    if (recentDocuments.length > 10) {
+      recentDocuments.removeLast();
+    }
+    if (doc.isFavorite) {
+      favoriteDocuments.insert(0, doc);
+    }
+  }
+
   /// Open existing document
   void openDocument(PdfDocument doc) {
+    // Get fresh document from storage to ensure we have latest lastPageIndex
+    final freshDoc = _storageService.documentsBox.get(doc.id) ?? doc;
+
     // Update last opened time
-    final updated = doc.copyWith(lastOpenedAt: DateTime.now());
+    final updated = freshDoc.copyWith(lastOpenedAt: DateTime.now());
     _storageService.documentsBox.put(doc.id, updated);
-    loadDocuments();
+
+    // Targeted update - move to front of lists
+    _updateDocumentInLists(updated);
 
     Get.toNamed('/pdf-viewer', arguments: updated);
+  }
+
+  /// Update document in lists without full reload
+  void _updateDocumentInLists(PdfDocument updated) {
+    // Update in main list
+    final docIndex = documents.indexWhere((d) => d.id == updated.id);
+    if (docIndex != -1) {
+      documents.removeAt(docIndex);
+      documents.insert(0, updated);
+    }
+
+    // Update recent list
+    recentDocuments.removeWhere((d) => d.id == updated.id);
+    recentDocuments.insert(0, updated);
+    if (recentDocuments.length > 10) {
+      recentDocuments.removeLast();
+    }
+
+    // Update favorites if needed
+    final favIndex = favoriteDocuments.indexWhere((d) => d.id == updated.id);
+    if (updated.isFavorite) {
+      if (favIndex != -1) {
+        favoriteDocuments[favIndex] = updated;
+      } else {
+        favoriteDocuments.insert(0, updated);
+      }
+    } else if (favIndex != -1) {
+      favoriteDocuments.removeAt(favIndex);
+    }
   }
 
   /// Toggle favorite status
   Future<void> toggleFavorite(PdfDocument doc) async {
     final updated = doc.copyWith(isFavorite: !doc.isFavorite);
     await _storageService.documentsBox.put(doc.id, updated);
-    loadDocuments();
+
+    // Targeted update
+    _updateDocumentInLists(updated);
   }
 
   /// Delete document from library
   Future<void> deleteDocument(PdfDocument doc) async {
-    await _pdfService.deleteFromStorage(doc.filePath);
-    await _pdfService.deleteThumbnail(doc.id);
-    await _storageService.documentsBox.delete(doc.id);
+    // Remove from lists first for instant UI feedback
+    _removeDocumentFromLists(doc);
 
-    // Also delete associated annotations and bookmarks
-    final highlights = _storageService.highlightsBox.values.where(
-      (h) => h.documentId == doc.id,
-    );
-    for (final h in highlights) {
-      await _storageService.highlightsBox.delete(h.id);
-    }
+    // Then do async cleanup
+    await Future.wait([
+      _pdfService.deleteFromStorage(doc.filePath),
+      _pdfService.deleteThumbnail(doc.id),
+      _storageService.documentsBox.delete(doc.id),
+    ]);
 
-    final bookmarks = _storageService.bookmarksBox.values.where(
-      (b) => b.documentId == doc.id,
-    );
-    for (final b in bookmarks) {
-      await _storageService.bookmarksBox.delete(b.id);
-    }
+    // Batch delete associated annotations and bookmarks
+    final highlightIds = _storageService.highlightsBox.values
+        .where((h) => h.documentId == doc.id)
+        .map((h) => h.id)
+        .toList();
+    await _storageService.highlightsBox.deleteAll(highlightIds);
 
-    loadDocuments();
+    final bookmarkIds = _storageService.bookmarksBox.values
+        .where((b) => b.documentId == doc.id)
+        .map((b) => b.id)
+        .toList();
+    await _storageService.bookmarksBox.deleteAll(bookmarkIds);
+
+    // Also delete drawings
+    final drawingIds = _storageService.drawingsBox.values
+        .where((d) => d.documentId == doc.id)
+        .map((d) => d.id)
+        .toList();
+    await _storageService.drawingsBox.deleteAll(drawingIds);
+  }
+
+  /// Remove document from lists without storage operations
+  void _removeDocumentFromLists(PdfDocument doc) {
+    documents.removeWhere((d) => d.id == doc.id);
+    recentDocuments.removeWhere((d) => d.id == doc.id);
+    favoriteDocuments.removeWhere((d) => d.id == doc.id);
   }
 
   void setTabIndex(int index) {
@@ -152,18 +227,33 @@ class LibraryController extends GetxController {
   }
 
   /// Regenerate thumbnail for a document (if missing)
-  Future<void> regenerateThumbnail(PdfDocument doc) async {
+  /// Uses the priority queue to avoid UI blocking
+  Future<void> regenerateThumbnail(PdfDocument doc, {int priority = 0}) async {
     if (doc.thumbnailPath != null) return;
 
-    final thumbnailPath = await _pdfService.generateThumbnail(
+    final thumbnailPath = await _thumbnailQueue.requestThumbnail(
       doc.filePath,
       doc.id,
+      priority: priority,
     );
 
     if (thumbnailPath != null) {
       final updated = doc.copyWith(thumbnailPath: thumbnailPath);
       await _storageService.documentsBox.put(doc.id, updated);
-      loadDocuments();
+
+      // Targeted update
+      _updateDocumentInLists(updated);
+    }
+  }
+
+  /// Queue thumbnail regeneration for all documents missing thumbnails
+  /// Uses low priority so it doesn't interfere with user interactions
+  Future<void> queueMissingThumbnails() async {
+    for (final doc in documents) {
+      if (doc.thumbnailPath == null) {
+        // Don't await - let them process in background
+        regenerateThumbnail(doc, priority: -1);
+      }
     }
   }
 }

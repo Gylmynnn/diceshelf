@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/constants/collection_icons.dart';
 import '../../../core/services/localization_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../data/models/collection.dart';
@@ -268,7 +269,7 @@ class CollectionsController extends GetxController {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          _getIconData(collection.iconName),
+                          CollectionIcons.getIcon(collection.iconName),
                           color: Color(collection.colorValue),
                         ),
                       ),
@@ -286,43 +287,5 @@ class CollectionsController extends GetxController {
         );
       },
     );
-  }
-
-  /// Get IconData from icon name string
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'folder':
-        return Iconsax.folder_2;
-      case 'book':
-        return Iconsax.book;
-      case 'document':
-        return Iconsax.document;
-      case 'archive':
-        return Iconsax.archive;
-      case 'briefcase':
-        return Iconsax.briefcase;
-      case 'category':
-        return Iconsax.category;
-      case 'clipboard':
-        return Iconsax.clipboard;
-      case 'note':
-        return Iconsax.note;
-      case 'bookmark':
-        return Iconsax.bookmark;
-      case 'star':
-        return Iconsax.star;
-      case 'heart':
-        return Iconsax.heart;
-      case 'flag':
-        return Iconsax.flag;
-      case 'tag':
-        return Iconsax.tag;
-      case 'layer':
-        return Iconsax.layer;
-      case 'box':
-        return Iconsax.box;
-      default:
-        return Iconsax.folder_2;
-    }
   }
 }

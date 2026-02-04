@@ -42,9 +42,14 @@ class HighlightsController extends GetxController {
   }
 
   void openDocument(Highlight highlight) {
-    final doc = documents[highlight.documentId];
+    // Get fresh document from storage to ensure we have latest data
+    final doc = _storageService.documentsBox.get(highlight.documentId);
     if (doc != null) {
-      Get.toNamed('/pdf-viewer', arguments: doc);
+      // Pass both document and highlight info to jump to the highlight
+      Get.toNamed(
+        '/pdf-viewer',
+        arguments: {'document': doc, 'jumpToHighlight': highlight},
+      );
     }
   }
 }

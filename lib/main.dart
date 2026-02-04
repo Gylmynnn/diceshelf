@@ -7,6 +7,7 @@ import 'app/core/services/localization_service.dart';
 import 'app/core/services/pdf_service.dart';
 import 'app/core/services/storage_service.dart';
 import 'app/core/services/theme_service.dart';
+import 'app/core/services/thumbnail_queue_service.dart';
 import 'app/core/themes/app_theme.dart';
 import 'app/routes/app_pages.dart';
 
@@ -40,6 +41,9 @@ Future<void> _initServices() async {
 
   // Theme service
   Get.put(ThemeService(), permanent: true);
+
+  // Thumbnail queue service (for priority-based thumbnail generation)
+  Get.put(ThumbnailQueueService(), permanent: true);
 
   // Localization service
   final localizationService = LocalizationService();
