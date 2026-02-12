@@ -30,24 +30,24 @@ Future<void> main() async {
 
 Future<void> _initServices() async {
   // Storage service (must be first)
-  final storageService = StorageService();
+  final StorageService storageService = StorageService();
   await storageService.init();
-  Get.put(storageService, permanent: true);
+  Get.put<StorageService>(storageService, permanent: true);
 
   // PDF service
-  final pdfService = PdfService();
+  final PdfService pdfService = PdfService();
   await pdfService.init();
-  Get.put(pdfService, permanent: true);
+  Get.put<PdfService>(pdfService, permanent: true);
 
   // Theme service
-  Get.put(ThemeService(), permanent: true);
+  Get.put<ThemeService>(ThemeService(), permanent: true);
 
   // Thumbnail queue service (for priority-based thumbnail generation)
-  Get.put(ThumbnailQueueService(), permanent: true);
+  Get.put<ThumbnailQueueService>(ThumbnailQueueService(), permanent: true);
 
   // Localization service
-  final localizationService = LocalizationService();
-  Get.put(localizationService, permanent: true);
+  final LocalizationService localizationService = LocalizationService();
+  Get.put<LocalizationService>(localizationService, permanent: true);
 }
 
 class DiceshelfApp extends StatelessWidget {
@@ -57,7 +57,7 @@ class DiceshelfApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<ThemeService>(
       init: Get.find<ThemeService>(),
-      builder: (themeService) {
+      builder: (ThemeService themeService) {
         return GetMaterialApp(
           title: AppStrings.appName,
           debugShowCheckedModeBanner: false,
