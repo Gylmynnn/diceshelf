@@ -9,9 +9,7 @@ class SplashView extends GetView<SplashController> {
 
   @override
   Widget build(BuildContext context) {
-    // Just reference controller to trigger initialization
     controller;
-
     return Scaffold(
       backgroundColor: EverblushColors.background,
       body: Center(
@@ -27,8 +25,8 @@ class SplashView extends GetView<SplashController> {
                 return Transform.scale(scale: value, child: child);
               },
               child: Container(
-                width: 120,
-                height: 120,
+                width: 300,
+                height: 300,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
@@ -43,8 +41,8 @@ class SplashView extends GetView<SplashController> {
                   borderRadius: BorderRadius.circular(28),
                   child: Image.asset(
                     'assets/icons/app_icon.png',
-                    width: 120,
-                    height: 120,
+                    width: 300,
+                    height: 300,
                     fit: BoxFit.cover,
                   ),
                 ),
