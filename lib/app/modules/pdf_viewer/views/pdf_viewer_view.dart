@@ -156,15 +156,26 @@ class PdfViewerView extends GetView<PdfViewerController> {
       final isHighlightMode =
           controller.annotationMode.value == AnnotationMode.highlight;
       final isZoomLocked = controller.isZoomLocked.value;
+      final isDrawingOrEraser =
+          controller.annotationMode.value == AnnotationMode.drawing ||
+          controller.annotationMode.value == AnnotationMode.eraser;
 
       return GestureDetector(
-        onTap: controller.toggleToolbar,
+        // Disable tap interception in highlight mode so text selection works on mobile,
+        // and in drawing/eraser mode so drawing gestures are not interfered with
+        onTap: isHighlightMode || isDrawingOrEraser
+            ? null
+            : controller.toggleToolbar,
         child: pdf.PdfViewer.file(
           controller.pdfFile.path,
           controller: controller.pdfViewerController,
           params: pdf.PdfViewerParams(
             enableTextSelection: isHighlightMode,
-            panEnabled: !isZoomLocked,
+            panEnabled: true,
+            // Lock horizontal scroll when zoom is locked, allowing only vertical scrolling
+            panAxis: isZoomLocked ? PanAxis.vertical : PanAxis.free,
+            // Prevent zoom changes when zoom is locked
+            scaleEnabled: !isZoomLocked,
             pageDropShadow: BoxShadow(
               color: theme.shadowColor.withValues(alpha: 0.3),
               blurRadius: 8,
