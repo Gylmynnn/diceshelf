@@ -9,41 +9,115 @@ class DrawingOverlay extends StatelessWidget {
 
   const DrawingOverlay({super.key, required this.controller});
 
+  /// Convert a screen-local position to page-relative normalized coordinates (0-1).
+  /// Returns null if the position cannot be mapped to the current page.
+  Offset? _screenToPageNormalized(Offset localPosition, BuildContext context) {
+    final pdfController = controller.pdfViewerController;
+    if (pdfController == null) return null;
+
+    try {
+      final layout = pdfController.layout;
+      final pageIndex = controller.currentPage.value - 1;
+      if (pageIndex < 0 || pageIndex >= layout.pageLayouts.length) return null;
+
+      // Convert local position to global position
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null) return null;
+      final globalPosition = renderBox.localToGlobal(localPosition);
+
+      // Convert global screen position to document coordinates
+      final docPosition = pdfController.globalToDocument(globalPosition);
+      if (docPosition == null) return null;
+
+      // Get the current page rect in document coordinates
+      final pageRect = layout.pageLayouts[pageIndex];
+
+      // Normalize relative to the page (0-1 range)
+      final normalized = Offset(
+        (docPosition.dx - pageRect.left) / pageRect.width,
+        (docPosition.dy - pageRect.top) / pageRect.height,
+      );
+
+      return normalized;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Convert page-relative normalized coordinates (0-1) back to screen-local position.
+  /// Returns null if the position cannot be mapped.
+  Offset? _pageNormalizedToScreen(Offset normalized, BuildContext context) {
+    final pdfController = controller.pdfViewerController;
+    if (pdfController == null) return null;
+
+    try {
+      final layout = pdfController.layout;
+      final pageIndex = controller.currentPage.value - 1;
+      if (pageIndex < 0 || pageIndex >= layout.pageLayouts.length) return null;
+
+      // Get the current page rect in document coordinates
+      final pageRect = layout.pageLayouts[pageIndex];
+
+      // Convert from normalized (0-1) to document coordinates
+      final docPosition = Offset(
+        pageRect.left + normalized.dx * pageRect.width,
+        pageRect.top + normalized.dy * pageRect.height,
+      );
+
+      // Convert document coordinates to global screen position
+      final globalPosition = pdfController.documentToGlobal(docPosition);
+      if (globalPosition == null) return null;
+
+      // Convert global to local position within this widget
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null) return null;
+      return renderBox.globalToLocal(globalPosition);
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final viewSize = Size(constraints.maxWidth, constraints.maxHeight);
-
-          return GestureDetector(
-            onPanStart: (details) {
-              controller.startStroke(details.localPosition, viewSize);
-            },
-            onPanUpdate: (details) {
-              controller.updateStroke(details.localPosition, viewSize);
-            },
-            onPanEnd: (details) {
-              controller.endStroke(controller.currentPage.value - 1, viewSize);
-            },
-            child: Obx(
-              () => CustomPaint(
-                painter: DrawingPainter(
-                  currentStroke: controller.currentStroke.toList(),
-                  viewSize: viewSize,
-                  color:
-                      controller.annotationMode.value == AnnotationMode.eraser
-                      ? EverblushColors.textMuted
-                      : controller.selectedDrawingColor.value,
-                  strokeWidth: controller.strokeWidth.value,
-                  isEraser:
-                      controller.annotationMode.value == AnnotationMode.eraser,
-                ),
-                size: Size.infinite,
-              ),
-            ),
+      child: GestureDetector(
+        onPanStart: (details) {
+          final normalized = _screenToPageNormalized(
+            details.localPosition,
+            context,
           );
+          if (normalized != null) {
+            controller.startStrokeNormalized(normalized);
+          }
         },
+        onPanUpdate: (details) {
+          final normalized = _screenToPageNormalized(
+            details.localPosition,
+            context,
+          );
+          if (normalized != null) {
+            controller.updateStrokeNormalized(normalized);
+          }
+        },
+        onPanEnd: (details) {
+          controller.endStroke(controller.currentPage.value - 1);
+        },
+        child: Obx(
+          () => CustomPaint(
+            painter: DrawingPainter(
+              currentStroke: controller.currentStroke.toList(),
+              screenPointConverter: (normalized) =>
+                  _pageNormalizedToScreen(normalized, context),
+              color: controller.annotationMode.value == AnnotationMode.eraser
+                  ? EverblushColors.textMuted
+                  : controller.selectedDrawingColor.value,
+              strokeWidth: controller.strokeWidth.value,
+              isEraser:
+                  controller.annotationMode.value == AnnotationMode.eraser,
+            ),
+            size: Size.infinite,
+          ),
+        ),
       ),
     );
   }
@@ -51,14 +125,14 @@ class DrawingOverlay extends StatelessWidget {
 
 class DrawingPainter extends CustomPainter {
   final List<Offset> currentStroke;
-  final Size viewSize;
+  final Offset? Function(Offset normalized) screenPointConverter;
   final Color color;
   final double strokeWidth;
   final bool isEraser;
 
   DrawingPainter({
     required this.currentStroke,
-    required this.viewSize,
+    required this.screenPointConverter,
     required this.color,
     required this.strokeWidth,
     required this.isEraser,
@@ -75,10 +149,16 @@ class DrawingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Convert normalized coordinates back to screen coordinates
-    final screenPoints = currentStroke
-        .map((p) => Offset(p.dx * viewSize.width, p.dy * viewSize.height))
-        .toList();
+    // Convert normalized page coordinates back to screen coordinates
+    final screenPoints = <Offset>[];
+    for (final p in currentStroke) {
+      final screenPoint = screenPointConverter(p);
+      if (screenPoint != null) {
+        screenPoints.add(screenPoint);
+      }
+    }
+
+    if (screenPoints.isEmpty) return;
 
     if (screenPoints.length == 1) {
       // Draw a single point as a circle

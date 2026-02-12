@@ -12,10 +12,7 @@ class SplashController extends GetxController {
   }
 
   Future<void> _navigateAfterDelay() async {
-    // Wait for splash animation
     await Future.delayed(const Duration(milliseconds: 2000));
-
-    // Check if user has seen onboarding
     final storageService = Get.find<StorageService>();
     final hasSeenOnboarding = storageService.get<bool>(_onboardingKey) ?? false;
 

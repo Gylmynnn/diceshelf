@@ -309,27 +309,17 @@ class PdfViewerController extends GetxController {
     _rebuildHighlightsCache();
   }
 
-  // Drawing operations with page-relative coordinates
-  void startStroke(Offset point, Size viewSize) {
+  // Drawing operations with page-relative normalized coordinates (0-1 range)
+  void startStrokeNormalized(Offset normalized) {
     currentStroke.clear();
-    // Store normalized coordinates (0-1 range)
-    final normalized = Offset(
-      point.dx / viewSize.width,
-      point.dy / viewSize.height,
-    );
     currentStroke.add(normalized);
   }
 
-  void updateStroke(Offset point, Size viewSize) {
-    // Store normalized coordinates (0-1 range)
-    final normalized = Offset(
-      point.dx / viewSize.width,
-      point.dy / viewSize.height,
-    );
+  void updateStrokeNormalized(Offset normalized) {
     currentStroke.add(normalized);
   }
 
-  Future<void> endStroke(int pageIndex, Size viewSize) async {
+  Future<void> endStroke(int pageIndex) async {
     if (currentStroke.isEmpty) return;
 
     // Get existing drawing for this page or create new one - O(1) lookup
