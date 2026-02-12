@@ -3,7 +3,7 @@ class AppStrings {
   AppStrings._();
 
   static const String appName = 'Diceshelf';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.2.2';
 
   // Storage keys
   static const String themeKey = 'theme_mode';
