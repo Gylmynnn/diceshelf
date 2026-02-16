@@ -25,8 +25,8 @@ class SplashView extends GetView<SplashController> {
                 return Transform.scale(scale: value, child: child);
               },
               child: Container(
-                width: 300,
-                height: 300,
+                width: 250,
+                height: 250,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
@@ -41,8 +41,8 @@ class SplashView extends GetView<SplashController> {
                   borderRadius: BorderRadius.circular(28),
                   child: Image.asset(
                     'assets/icons/app_icon.png',
-                    width: 300,
-                    height: 300,
+                    width: 250,
+                    height: 250,
                     fit: BoxFit.cover,
                   ),
                 ),
